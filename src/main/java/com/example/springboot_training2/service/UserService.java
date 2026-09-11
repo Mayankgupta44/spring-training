@@ -1,51 +1,73 @@
 package com.example.springboot_training2.service;
 
+import com.example.springboot_training2.dto.UserRequestDTO;
+import com.example.springboot_training2.dto.UserResponseDTO;
+import com.example.springboot_training2.exception.UserNotFoundException;
+import com.example.springboot_training2.mapper.UserMapper;
 import com.example.springboot_training2.model.User;
 import com.example.springboot_training2.repository.UserRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserService {
+
     public String helloService(){
         return "Hello Service";
     }
 
     private final UserRepository userRepository;
+    private final UserMapper userMapper;
 
-    public UserService(UserRepository userRepository){
+    public UserService(UserRepository userRepository, UserMapper userMapper) {
         this.userRepository = userRepository;
+        this.userMapper = userMapper;
     }
 
-    public User saveUser(User user){
-        userRepository.save(user);
-        return user;
+    public UserResponseDTO saveUser(UserRequestDTO dto){
+        User user = userMapper.toEntity(dto);
+
+        User savedUser = userRepository.save(user);
+
+        return userMapper.toResponseDTO(savedUser);
     }
 
-    public List<User> getAllUsers(){
-        return userRepository.findAll();
+    public List<UserResponseDTO> getAllUsers(){
+        List<User> list = userRepository.findAll();
+        List<UserResponseDTO> responseList = new ArrayList<>();
+
+        for(User user : list){
+            UserResponseDTO dto = userMapper.toResponseDTO(user);
+
+            responseList.add(dto);
+        }
+        return responseList;
     }
 
-    public Optional<User> getUserById(Long id){
-        return userRepository.findById(id);
+    public UserResponseDTO getUserById(Long id) {
+        User user =  userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        return userMapper.toResponseDTO(user);
+
     }
 
-    public User updateUserById(Long id, User user){
-        Optional<User> existingUser = userRepository.findById(id);
+    @Transactional
+    public UserResponseDTO updateUserById(Long id, UserRequestDTO dto){
+        User existing = userRepository.findById(id).orElseThrow(() -> new UserNotFoundException(("User not found")));
 
-        User existing = existingUser.get();
+        userMapper.updateEntity(dto, existing);
 
-        existing.setName(user.getName());
-        existing.setAge(user.getAge());
-        existing.setContact(user.getContact());
-
-        return userRepository.save(existing);
+        return userMapper.toResponseDTO(existing);
     }
 
-    public String deleteUserByIdS(Long id){
+    public void deleteUserByIdS(Long id){
+        if(!userRepository.existsById(id)){
+            throw new UserNotFoundException("User not found");
+        }
         userRepository.deleteById(id);
-        return "User deleted";
     }
 }

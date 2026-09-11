@@ -1,11 +1,13 @@
 package com.example.springboot_training2.controller;
 
-import com.example.springboot_training2.model.User;
+import com.example.springboot_training2.dto.UserRequestDTO;
+import com.example.springboot_training2.dto.UserResponseDTO;
 import com.example.springboot_training2.service.UserService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
@@ -18,27 +20,31 @@ public class UserController {
     }
 
     @GetMapping
-    public List<User> getUsers(){
+    public List<UserResponseDTO> getUsers(){
         return userService.getAllUsers();
     }
 
     @PostMapping
-    public User createUser(@RequestBody User user){
-        return userService.saveUser(user);
+    public ResponseEntity<UserResponseDTO> createUser(@Valid @RequestBody UserRequestDTO dto){
+        UserResponseDTO response = userService.saveUser(dto);
+        return ResponseEntity.status(201).body(response);
     }
 
     @GetMapping("/{id}")
-    public Optional<User> getUserById(@PathVariable Long id){
+    public UserResponseDTO getUserById(@PathVariable Long id){
         return userService.getUserById(id);
     }
 
     @PutMapping("/{id}")
-    public User updateUser(@RequestBody User user, @PathVariable Long id) {
-        return userService.updateUserById(id, user);
+    public ResponseEntity<UserResponseDTO> updateUser(@Valid @RequestBody UserRequestDTO dto, @PathVariable Long id) {
+        UserResponseDTO response = userService.updateUserById(id, dto);
+
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{id}")
-    public String deleteUserById(@PathVariable Long id){
-        return userService.deleteUserByIdS(id);
+    public ResponseEntity<Void> deleteUserById(@PathVariable Long id){
+         userService.deleteUserByIdS(id);
+         return ResponseEntity.noContent().build();
     }
 }
